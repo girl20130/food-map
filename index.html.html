@@ -1,0 +1,640 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>蔚華科技 周邊美食地圖</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700;900&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg:#0f0f0f; --surface:#1a1a1a; --surface2:#242424; --border:#2e2e2e;
+    --accent:#ff6b35; --accent2:#ffd166; --accent3:#06d6a0;
+    --text:#f0ede8; --text2:#9e9a94; --text3:#5a5650;
+    --tag-tw:#ff6b35; --tag-jp:#e84393; --tag-in:#ff9500;
+    --tag-cafe:#7c6fcd; --tag-west:#00b4d8; --tag-hot:#ef233c;
+    --tag-veg:#06d6a0; --tag-snack:#ffd166; --tag-other:#6c757d;
+  }
+  *{margin:0;padding:0;box-sizing:border-box;}
+  body{font-family:'Noto Sans TC',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;overflow-x:hidden;}
+
+  /* HEADER */
+  header{background:var(--surface);border-bottom:1px solid var(--border);padding:0 24px;position:sticky;top:0;z-index:100;display:flex;align-items:center;gap:16px;height:64px;}
+  .logo{font-family:'Space Mono',monospace;font-size:13px;color:var(--accent);letter-spacing:.08em;white-space:nowrap;}
+  .logo span{color:var(--text2);}
+  .header-title{font-size:16px;font-weight:700;}
+  .header-sub{font-size:12px;color:var(--text2);margin-top:1px;}
+  .header-right{margin-left:auto;display:flex;align-items:center;gap:10px;flex-wrap:wrap;}
+  .count-badge{background:var(--accent);color:white;font-size:11px;font-weight:700;padding:3px 10px;border-radius:20px;font-family:'Space Mono',monospace;}
+
+  .sync-status{font-size:11px;color:var(--text3);display:flex;align-items:center;gap:5px;}
+  .sync-dot{width:7px;height:7px;border-radius:50%;background:var(--text3);}
+  .sync-dot.ok{background:var(--accent3);box-shadow:0 0 6px var(--accent3);}
+  .sync-dot.err{background:var(--tag-hot);}
+  .sync-dot.loading{background:var(--accent2);animation:pulse 1s infinite;}
+  @keyframes pulse{0%,100%{opacity:1;}50%{opacity:.4;}}
+
+  .add-btn{background:var(--accent3);color:#0f0f0f;font-size:12px;font-weight:700;padding:7px 14px;border-radius:8px;border:none;cursor:pointer;font-family:'Noto Sans TC',sans-serif;display:flex;align-items:center;gap:5px;transition:opacity .15s;}
+  .add-btn:hover{opacity:.85;}
+  .add-btn:disabled{opacity:.4;cursor:not-allowed;}
+
+  .refresh-btn{background:transparent;border:1px solid var(--border);color:var(--text2);padding:6px 10px;border-radius:8px;font-size:12px;cursor:pointer;transition:all .15s;font-family:'Noto Sans TC',sans-serif;}
+  .refresh-btn:hover{border-color:var(--accent2);color:var(--accent2);}
+
+  /* SEARCH */
+  .search-wrap{padding:16px 24px 0;}
+  .search-box{position:relative;max-width:500px;}
+  .search-box input{width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:10px 16px 10px 42px;color:var(--text);font-size:14px;font-family:'Noto Sans TC',sans-serif;outline:none;transition:border-color .2s;}
+  .search-box input:focus{border-color:var(--accent);}
+  .search-box input::placeholder{color:var(--text3);}
+  .search-icon{position:absolute;left:14px;top:50%;transform:translateY(-50%);color:var(--text3);font-size:16px;}
+
+  /* FILTERS */
+  .filter-bar{padding:14px 24px 0;display:flex;gap:8px;flex-wrap:wrap;}
+  .filter-btn{background:var(--surface2);border:1px solid var(--border);color:var(--text2);padding:6px 14px;border-radius:20px;font-size:12px;font-weight:500;cursor:pointer;transition:all .15s;display:flex;align-items:center;gap:5px;font-family:'Noto Sans TC',sans-serif;}
+  .filter-btn:hover{border-color:var(--accent);color:var(--text);}
+  .filter-btn.active{background:var(--accent);border-color:var(--accent);color:white;}
+  .filter-dot{width:7px;height:7px;border-radius:50%;}
+
+  .area-bar{padding:12px 24px 0;display:flex;gap:6px;flex-wrap:wrap;}
+  .area-btn{background:transparent;border:1px solid var(--border);color:var(--text3);padding:5px 12px;border-radius:6px;font-size:11px;font-weight:500;cursor:pointer;transition:all .15s;font-family:'Noto Sans TC',sans-serif;}
+  .area-btn:hover{border-color:var(--accent2);color:var(--accent2);}
+  .area-btn.active{background:var(--surface2);border-color:var(--accent2);color:var(--accent2);}
+
+  /* MAIN */
+  .main{display:grid;grid-template-columns:1fr 340px;height:calc(100vh - 64px - 56px - 50px - 44px - 36px);min-height:400px;}
+
+  .card-list{overflow-y:auto;padding:16px 24px;display:grid;grid-template-columns:repeat(auto-fill,minmax(270px,1fr));gap:12px;align-content:start;}
+  .card-list::-webkit-scrollbar{width:4px;}
+  .card-list::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px;}
+
+  /* LOADING STATE */
+  .loading-state{grid-column:1/-1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:60px 20px;color:var(--text3);gap:12px;}
+  .spinner{width:32px;height:32px;border:2px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin .7s linear infinite;}
+  @keyframes spin{to{transform:rotate(360deg);}}
+
+  .card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:14px 16px;cursor:pointer;transition:all .15s;position:relative;overflow:hidden;}
+  .card::before{content:'';position:absolute;left:0;top:0;bottom:0;width:3px;border-radius:3px 0 0 3px;background:var(--accent);opacity:0;transition:opacity .15s;}
+  .card:hover{border-color:var(--accent);transform:translateY(-1px);}
+  .card:hover::before{opacity:1;}
+  .card.highlighted{border-color:var(--accent);background:#1f1a17;}
+  .card.highlighted::before{opacity:1;}
+  .card.user-card{border-color:#1a2e20;}
+  .card.user-card::after{content:'👤 新增';position:absolute;top:10px;right:10px;font-size:9px;color:var(--accent3);font-weight:700;background:#0d201a;padding:2px 6px;border-radius:4px;border:1px solid var(--accent3)44;}
+
+  .card-top{display:flex;align-items:flex-start;justify-content:space-between;gap:8px;margin-bottom:6px;}
+  .card-name{font-size:14px;font-weight:700;line-height:1.3;}
+  .card-rating{font-family:'Space Mono',monospace;font-size:12px;font-weight:700;color:var(--accent2);white-space:nowrap;}
+  .card-rating::before{content:'★ ';}
+  .card-tags{display:flex;flex-wrap:wrap;gap:4px;margin-bottom:7px;}
+  .tag{font-size:10px;font-weight:600;padding:2px 7px;border-radius:4px;}
+  .area-badge{font-size:9px;font-weight:600;padding:2px 6px;border-radius:3px;background:var(--surface2);color:var(--text3);border:1px solid var(--border);}
+  .card-note{font-size:11px;color:var(--text2);line-height:1.5;margin-bottom:5px;}
+  .card-meta{display:flex;gap:10px;font-size:10px;color:var(--text3);flex-wrap:wrap;}
+
+  .card-del{position:absolute;bottom:10px;right:10px;background:transparent;border:1px solid var(--border);color:var(--text3);font-size:10px;padding:2px 7px;border-radius:4px;cursor:pointer;display:none;transition:all .15s;font-family:'Noto Sans TC',sans-serif;}
+  .user-card:hover .card-del{display:block;}
+  .card-del:hover{background:var(--tag-hot);border-color:var(--tag-hot);color:white;}
+
+  /* MAP PANEL */
+  .map-panel{border-left:1px solid var(--border);background:var(--surface);display:flex;flex-direction:column;overflow:hidden;}
+  .map-header{padding:14px 16px 10px;border-bottom:1px solid var(--border);}
+  .map-header h3{font-size:12px;font-weight:700;color:var(--text2);letter-spacing:.1em;text-transform:uppercase;margin-bottom:4px;}
+  .map-placeholder{width:100%;height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;color:var(--text3);font-size:13px;text-align:center;padding:20px;}
+  .map-placeholder .icon{font-size:40px;}
+
+  /* DETAIL */
+  .detail-panel{position:fixed;bottom:0;left:0;right:340px;background:var(--surface);border-top:2px solid var(--accent);padding:16px 24px;transform:translateY(100%);transition:transform .25s cubic-bezier(.16,1,.3,1);z-index:50;display:flex;gap:20px;align-items:flex-start;}
+  .detail-panel.open{transform:translateY(0);}
+  .detail-name{font-size:18px;font-weight:900;margin-bottom:6px;}
+  .detail-rating{font-family:'Space Mono',monospace;font-size:14px;color:var(--accent2);margin-bottom:8px;}
+  .detail-body{font-size:12px;color:var(--text2);line-height:1.7;flex:1;}
+  .detail-close{background:var(--surface2);border:1px solid var(--border);color:var(--text2);width:28px;height:28px;border-radius:6px;cursor:pointer;font-size:14px;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+
+  /* STATUS */
+  .status-bar{padding:8px 24px;border-top:1px solid var(--border);background:var(--surface);font-size:11px;color:var(--text3);display:flex;gap:16px;align-items:center;}
+  .status-count{color:var(--accent);font-weight:700;font-family:'Space Mono',monospace;}
+
+  /* MODAL */
+  .modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:200;display:flex;align-items:center;justify-content:center;opacity:0;pointer-events:none;transition:opacity .2s;}
+  .modal-overlay.open{opacity:1;pointer-events:all;}
+  .modal{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:28px;width:90%;max-width:520px;transform:translateY(20px);transition:transform .25s cubic-bezier(.16,1,.3,1);max-height:90vh;overflow-y:auto;}
+  .modal-overlay.open .modal{transform:translateY(0);}
+  .modal h2{font-size:18px;font-weight:900;margin-bottom:4px;}
+  .modal-sub{font-size:12px;color:var(--text2);margin-bottom:20px;}
+
+  .form-row{margin-bottom:14px;}
+  .form-label{font-size:11px;font-weight:600;color:var(--text2);margin-bottom:5px;display:block;letter-spacing:.05em;}
+  .form-label span{color:var(--accent);}
+  .form-input,.form-select,.form-textarea{width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:9px 12px;color:var(--text);font-size:13px;font-family:'Noto Sans TC',sans-serif;outline:none;transition:border-color .2s;}
+  .form-input:focus,.form-select:focus,.form-textarea:focus{border-color:var(--accent);}
+  .form-input::placeholder,.form-textarea::placeholder{color:var(--text3);}
+  .form-select option{background:var(--surface2);}
+  .form-textarea{resize:vertical;min-height:70px;}
+  .form-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+
+  .cat-grid{display:flex;flex-wrap:wrap;gap:6px;}
+  .cat-check{display:none;}
+  .cat-label{font-size:11px;font-weight:600;padding:4px 10px;border-radius:6px;cursor:pointer;border:1px solid var(--border);color:var(--text2);transition:all .15s;user-select:none;}
+  .cat-check:checked + .cat-label{background:var(--accent);border-color:var(--accent);color:white;}
+
+  .modal-footer{display:flex;gap:10px;margin-top:20px;}
+  .btn-cancel{flex:1;background:var(--surface2);border:1px solid var(--border);color:var(--text2);padding:10px;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;font-family:'Noto Sans TC',sans-serif;transition:all .15s;}
+  .btn-cancel:hover{border-color:var(--text2);color:var(--text);}
+  .btn-submit{flex:2;background:var(--accent);border:none;color:white;padding:10px;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;font-family:'Noto Sans TC',sans-serif;transition:opacity .15s;}
+  .btn-submit:hover{opacity:.85;}
+  .btn-submit:disabled{opacity:.5;cursor:not-allowed;}
+
+  /* TOAST */
+  .toast{position:fixed;bottom:80px;left:50%;transform:translateX(-50%) translateY(20px);background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:10px 20px;font-size:13px;z-index:300;opacity:0;transition:all .3s;pointer-events:none;white-space:nowrap;}
+  .toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+  .toast.success{border-color:var(--accent3);color:var(--accent3);}
+  .toast.error{border-color:var(--tag-hot);color:var(--tag-hot);}
+
+  /* SETUP BANNER */
+  .setup-banner{background:#1a1200;border:1px solid var(--accent2)44;border-radius:10px;padding:12px 16px;margin:12px 24px 0;font-size:12px;color:var(--accent2);display:flex;align-items:flex-start;gap:10px;line-height:1.6;}
+  .setup-banner .icon{font-size:18px;flex-shrink:0;margin-top:1px;}
+  .setup-banner a{color:var(--accent);text-decoration:underline;}
+  .setup-banner .close-banner{margin-left:auto;cursor:pointer;color:var(--text3);font-size:14px;flex-shrink:0;}
+
+  .no-results{grid-column:1/-1;text-align:center;padding:60px 20px;color:var(--text3);}
+  .no-results .icon{font-size:40px;margin-bottom:10px;}
+
+  @media(max-width:900px){
+    .main{grid-template-columns:1fr;}
+    .map-panel{display:none;}
+    .detail-panel{right:0;}
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div>
+    <div class="logo">WEIHUA TECH <span>/ 蔚華科技</span></div>
+    <div style="display:flex;align-items:center;gap:8px;margin-top:2px;">
+      <div class="header-title">周邊美食地圖</div>
+    </div>
+  </div>
+  <div class="header-right">
+    <div class="sync-status" id="sync-status">
+      <div class="sync-dot loading" id="sync-dot"></div>
+      <span id="sync-text">連線中…</span>
+    </div>
+    <button class="refresh-btn" onclick="loadData()" title="重新整理">↺ 同步</button>
+    <button class="add-btn" id="add-btn" onclick="openModal()">＋ 新增店家</button>
+    <div class="count-badge" id="total-count">載入中</div>
+  </div>
+</header>
+
+<!-- SETUP BANNER（未設定 API 時顯示） -->
+<div class="setup-banner" id="setup-banner" style="display:none;">
+  <div class="icon">⚙️</div>
+  <div>
+    <strong>尚未設定 Google 試算表 API</strong><br>
+    請照步驟設定後，把 API 網址貼到這個 HTML 的 <code style="background:#ffffff11;padding:1px 5px;border-radius:3px;">APPS_SCRIPT_URL</code> 變數。
+    目前顯示的是<strong>預設資料</strong>，新增的店家只存在你的瀏覽器。
+    <br><a href="#" onclick="document.getElementById('setup-banner').style.display='none'">了解了，暫時關閉</a>
+  </div>
+  <span class="close-banner" onclick="document.getElementById('setup-banner').style.display='none'">✕</span>
+</div>
+
+<div class="search-wrap">
+  <div class="search-box">
+    <span class="search-icon">🔍</span>
+    <input type="text" id="search-input" placeholder="搜尋店名、菜色、關鍵字…">
+  </div>
+</div>
+
+<div class="filter-bar" id="filter-bar">
+  <button class="filter-btn active" data-filter="all">🍽️ 全部</button>
+  <button class="filter-btn" data-filter="台式"><span class="filter-dot" style="background:var(--tag-tw)"></span>台式</button>
+  <button class="filter-btn" data-filter="日式"><span class="filter-dot" style="background:var(--tag-jp)"></span>日式</button>
+  <button class="filter-btn" data-filter="印度"><span class="filter-dot" style="background:var(--tag-in)"></span>印度</button>
+  <button class="filter-btn" data-filter="咖啡"><span class="filter-dot" style="background:var(--tag-cafe)"></span>咖啡廳</button>
+  <button class="filter-btn" data-filter="西式"><span class="filter-dot" style="background:var(--tag-west)"></span>西式</button>
+  <button class="filter-btn" data-filter="麻辣"><span class="filter-dot" style="background:var(--tag-hot)"></span>麻辣/串串</button>
+  <button class="filter-btn" data-filter="素食"><span class="filter-dot" style="background:var(--tag-veg)"></span>素食</button>
+  <button class="filter-btn" data-filter="小吃"><span class="filter-dot" style="background:var(--tag-snack)"></span>小吃/麵食</button>
+</div>
+
+<div class="area-bar" id="area-bar">
+  <button class="area-btn active" data-area="all">📍 全部區域</button>
+  <button class="area-btn" data-area="水源街">🏢 水源街/公司周邊</button>
+  <button class="area-btn" data-area="公道五路">🛣️ 公道五路方向</button>
+  <button class="area-btn" data-area="馬偕">🏥 馬偕醫院周邊</button>
+</div>
+
+<div class="main">
+  <div class="card-list" id="card-list">
+    <div class="loading-state">
+      <div class="spinner"></div>
+      <div>載入餐廳資料中…</div>
+    </div>
+  </div>
+  <div class="map-panel">
+    <div class="map-header">
+      <h3>地圖位置</h3>
+      <div style="font-size:11px;color:var(--text3)">點擊店家卡片查看位置</div>
+    </div>
+    <div class="map-container" style="flex:1;display:flex;align-items:center;justify-content:center;">
+      <div class="map-placeholder">
+        <div class="icon">🗺️</div>
+        <div>點擊左側店家卡片<br>在 Google 地圖開啟位置</div>
+        <div style="margin-top:8px;font-size:10px;line-height:1.6;color:var(--text3)">蔚華科技<br>新竹市東區水源街95號</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="status-bar">
+  <span>顯示 <span class="status-count" id="show-count">0</span> 家餐廳</span>
+  <span style="color:var(--border)">|</span>
+  <span id="user-count-label">⭐ 評分來源：Google Maps</span>
+  <span style="color:var(--border)">|</span>
+  <span id="last-sync">尚未同步</span>
+</div>
+
+<div class="detail-panel" id="detail-panel">
+  <div style="flex:1">
+    <div class="detail-name" id="d-name"></div>
+    <div class="detail-rating" id="d-rating"></div>
+    <div class="detail-body" id="d-body"></div>
+  </div>
+  <button class="detail-close" onclick="closeDetail()">✕</button>
+</div>
+
+<!-- ADD MODAL -->
+<div class="modal-overlay" id="modal-overlay" onclick="handleOverlayClick(event)">
+  <div class="modal">
+    <h2>＋ 新增店家</h2>
+    <div class="modal-sub">你新增的店家會即時同步給所有人 🍜</div>
+
+    <div class="form-row">
+      <label class="form-label">店名 <span>*</span></label>
+      <input class="form-input" id="f-name" placeholder="例：老王滷肉飯" maxlength="40">
+    </div>
+    <div class="form-grid">
+      <div class="form-row">
+        <label class="form-label">評分（1–5）</label>
+        <input class="form-input" id="f-rating" type="number" min="1" max="5" step="0.1" placeholder="4.5">
+      </div>
+      <div class="form-row">
+        <label class="form-label">區域 <span>*</span></label>
+        <select class="form-select" id="f-area">
+          <option value="水源街">🏢 水源街/公司周邊</option>
+          <option value="公道五路">🛣️ 公道五路方向</option>
+          <option value="馬偕">🏥 馬偕醫院周邊</option>
+        </select>
+      </div>
+    </div>
+    <div class="form-row">
+      <label class="form-label">地址</label>
+      <input class="form-input" id="f-addr" placeholder="例：忠孝路166號" maxlength="60">
+    </div>
+    <div class="form-grid">
+      <div class="form-row">
+        <label class="form-label">營業時間</label>
+        <input class="form-input" id="f-hours" placeholder="例：11:00–21:00" maxlength="40">
+      </div>
+      <div class="form-row">
+        <label class="form-label">公休日</label>
+        <input class="form-input" id="f-closed" placeholder="例：週一" maxlength="20">
+      </div>
+    </div>
+    <div class="form-row">
+      <label class="form-label">類型 <span>*</span>（可多選）</label>
+      <div class="cat-grid">
+        <input type="checkbox" class="cat-check" id="c-tw" value="台式"><label class="cat-label" for="c-tw">🇹🇼 台式</label>
+        <input type="checkbox" class="cat-check" id="c-jp" value="日式"><label class="cat-label" for="c-jp">🇯🇵 日式</label>
+        <input type="checkbox" class="cat-check" id="c-in" value="印度"><label class="cat-label" for="c-in">🇮🇳 印度</label>
+        <input type="checkbox" class="cat-check" id="c-cafe" value="咖啡"><label class="cat-label" for="c-cafe">☕ 咖啡廳</label>
+        <input type="checkbox" class="cat-check" id="c-west" value="西式"><label class="cat-label" for="c-west">🌮 西式</label>
+        <input type="checkbox" class="cat-check" id="c-hot" value="麻辣"><label class="cat-label" for="c-hot">🌶️ 麻辣</label>
+        <input type="checkbox" class="cat-check" id="c-veg" value="素食"><label class="cat-label" for="c-veg">🥗 素食</label>
+        <input type="checkbox" class="cat-check" id="c-snack" value="小吃"><label class="cat-label" for="c-snack">🍜 小吃</label>
+      </div>
+    </div>
+    <div class="form-row">
+      <label class="form-label">備註 / 推薦菜色</label>
+      <textarea class="form-textarea" id="f-note" placeholder="例：乾拌麵必點，湯頭清爽，老闆很親切…" maxlength="120"></textarea>
+    </div>
+    <div id="form-error" style="color:var(--tag-hot);font-size:12px;margin-bottom:10px;display:none;"></div>
+    <div class="modal-footer">
+      <button class="btn-cancel" onclick="closeModal()">取消</button>
+      <button class="btn-submit" id="submit-btn" onclick="submitForm()">✓ 新增到地圖</button>
+    </div>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div class="toast" id="toast"></div>
+
+<script>
+// ══════════════════════════════════════════════════════════
+// ⚙️ 設定區 — 把你的 Apps Script 網址貼在這裡
+// 部署後網址長這樣：https://script.google.com/macros/s/XXXX/exec
+// ══════════════════════════════════════════════════════════
+const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwxtWot05NtWorquemUevWyXULgnyZQlOvzu1SDCQmt7BMMyK5jxtNwjQmmREXE9hT7/exec'; // ← 貼在這裡！
+
+// ══════════════════════════════════════════════════════════
+// 預設資料（API 未設定時使用）
+// ══════════════════════════════════════════════════════════
+const DEFAULT_DATA = [
+  {name:"Pho Viet 越南料理",area:"水源街",cat:["台式"],rating:4.7,addr:"水源街附近",hours:"午晚餐",note:"越南河粉、春捲，清爽道地",closed:"",user:false},
+  {name:"海好湊包 小籠湯包",area:"水源街",cat:["台式"],rating:4.8,addr:"水源街附近",hours:"11:00–19:00",note:"⭐必試！新竹最厲害小籠包，建議預約",closed:"",user:false},
+  {name:"王姐魚湯麵",area:"水源街",cat:["台式","小吃"],rating:4.6,addr:"水源街附近",hours:"11:00–20:00",note:"魚湯麵超鮮美，份量大",closed:"週一",user:false},
+  {name:"麵食煮藝 自助火鍋",area:"水源街",cat:["台式"],rating:5.0,addr:"水源街附近",hours:"午晚餐",note:"5分評分！自助火鍋CP值極高",closed:"",user:false},
+  {name:"藤川和食 ふじかわ",area:"水源街",cat:["日式"],rating:4.8,addr:"水源街附近",hours:"午晚餐",note:"道地日本料理，定食份量十足",closed:"",user:false},
+  {name:"月桃拌麵",area:"水源街",cat:["台式","小吃"],rating:4.5,addr:"武昌街33號",hours:"11:30–20:30",note:"台式拌麵、豬肉飯，簡單美味",closed:"週一",user:false},
+  {name:"THERE Café",area:"水源街",cat:["咖啡"],rating:4.8,addr:"西門街1號3樓",hours:"10:30–01:00",note:"深夜咖啡廳，開到凌晨1點",closed:"",user:false},
+  {name:"sumi。壽司丼飯",area:"水源街",cat:["日式"],rating:4.9,addr:"平和街32號",hours:"11:30–14:30,17:30–21:00",note:"⭐超高評分生魚片丼，先到先得",closed:"週一",user:false},
+  {name:"少帥東北麻辣拌（林森店）",area:"水源街",cat:["麻辣","小吃"],rating:4.9,addr:"林森路87號",hours:"17:00–23:30",note:"麻辣拌超香，評分爆表",closed:"",user:false},
+  {name:"嗯雞刀串串香鴛鴦麻辣火鍋",area:"水源街",cat:["麻辣"],rating:4.9,addr:"中山路30號",hours:"11:00–05:00",note:"⭐串串麻辣鍋，開到凌晨5點！",closed:"",user:false},
+  {name:"滿分食分（城隍廟店）",area:"水源街",cat:["台式","小吃"],rating:5.0,addr:"中央路38號1樓",hours:"11:00–19:30",note:"5分！油飯、餛飩湯，純台式",closed:"週四",user:false},
+  {name:"美陽光印度餐廳（清真Halal）",area:"水源街",cat:["印度"],rating:4.9,addr:"中華路二段468號",hours:"11:00–21:00",note:"清真認證，正宗咖哩+烤餅",closed:"",user:false},
+  {name:"私廚の吃飯",area:"水源街",cat:["日式"],rating:4.8,addr:"中正路96巷16號",hours:"11:30–22:00",note:"舒肥雞+日式咖哩，評分超高",closed:"",user:false},
+  {name:"葉與豆 Cafe",area:"水源街",cat:["咖啡"],rating:4.8,addr:"南門街63號",hours:"10:00–19:00",note:"精品咖啡自家烘豆",closed:"週二",user:false},
+  {name:"硬派主廚的軟嫩料理",area:"水源街",cat:["西式"],rating:4.5,addr:"中央路102巷10號",hours:"11:30–21:30",note:"舒肥牛排飯，口感嫩到不行",closed:"",user:false},
+  {name:"白日夢 Pasta & Brunch",area:"水源街",cat:["西式"],rating:4.4,addr:"文昌街112號",hours:"11:30–20:00",note:"義式麵食早午餐",closed:"",user:false},
+  {name:"夜排檔熱炒",area:"公道五路",cat:["台式"],rating:4.4,addr:"公道五路二段346號",hours:"17:00–01:00",note:"台式熱炒聚餐首選，附免費白飯",closed:"週三",user:false},
+  {name:"Log 野筅餐酒館",area:"公道五路",cat:["西式"],rating:4.6,addr:"公道五路二段372號",hours:"18:00–00:30",note:"精釀啤酒+美式漢堡，氣氛超棒",closed:"週日",user:false},
+  {name:"中崎家 日式咖哩",area:"公道五路",cat:["日式"],rating:4.3,addr:"公道五路二段409號",hours:"11:30–20:00",note:"舒肥肉塊咖哩，有素食選項",closed:"",user:false},
+  {name:"吉舍饈品坊 滷肉飯",area:"公道五路",cat:["台式","小吃"],rating:4.6,addr:"公道五路三段211號",hours:"11:00–20:00",note:"白胡椒香菜滷肉飯超推",closed:"週日",user:false},
+  {name:"客美多咖啡 Komeda's",area:"公道五路",cat:["咖啡"],rating:4.0,addr:"公道五路三段1號",hours:"07:30–21:00",note:"日系連鎖咖啡廳，早上7:30開",closed:"",user:false},
+  {name:"窯食 木窯比薩",area:"公道五路",cat:["西式"],rating:4.7,addr:"建功一路222號",hours:"午晚餐",note:"義式木窯比薩，評分極高",closed:"週一",user:false},
+  {name:"MAS India Restaurant",area:"馬偕",cat:["印度"],rating:4.9,addr:"忠孝路166號",hours:"11:00–21:00",note:"⭐全新竹最高評分！正宗印度咖哩",closed:"",user:false},
+  {name:"犀牛西式小館 RHINO",area:"馬偕",cat:["西式"],rating:4.4,addr:"忠孝路434巷25號",hours:"週三-日",note:"精緻西式，全新竹最好吃之一",closed:"週一二",user:false},
+  {name:"Tudo Bem 哩賀巴西小館",area:"馬偕",cat:["西式"],rating:4.7,addr:"博愛街94巷2號",hours:"週四-六",note:"巴西手工比薩，Chef來自巴西",closed:"週一日",user:false},
+  {name:"Rock's Cooking 牛肉麵",area:"馬偕",cat:["小吃"],rating:4.6,addr:"鐵道路一段51號",hours:"11:30–14:00,17:30–20:00",note:"柴魚湯底牛肉麵，國際好評",closed:"週二",user:false},
+  {name:"厚礁牛肉麵 忠孝店",area:"馬偕",cat:["小吃"],rating:4.4,addr:"忠孝路25-1號",hours:"11:30–20:00",note:"清燉牛肉超嫩，三種麵條可選",closed:"",user:false},
+  {name:"丸龜製麵 Marukame",area:"馬偕",cat:["日式"],rating:4.5,addr:"忠孝路300號RT-Mart內",hours:"11:00–21:30",note:"日式烏龍麵連鎖",closed:"",user:false},
+  {name:"清大夜市臭豆腐",area:"馬偕",cat:["小吃"],rating:4.1,addr:"建功路10號",hours:"17:00–00:00",note:"外脆內嫩臭豆腐",closed:"",user:false},
+  {name:"杏一生活美食商場",area:"馬偕",cat:["台式","小吃"],rating:4.3,addr:"光復路二段690號（馬偕院內）",hours:"醫院營業時間",note:"院內美食廣場，最方便！",closed:"",user:false},
+];
+
+// ── STATE ──────────────────────────────────────────────────
+let allData = [];
+let activeFilter = 'all';
+let activeArea = 'all';
+let searchText = '';
+let isApiMode = false;
+
+const TAG_COLORS = {
+  '台式':'var(--tag-tw)','日式':'var(--tag-jp)','印度':'var(--tag-in)',
+  '咖啡':'var(--tag-cafe)','西式':'var(--tag-west)','麻辣':'var(--tag-hot)',
+  '素食':'var(--tag-veg)','小吃':'var(--tag-snack)'
+};
+
+function getAreaLabel(a) {
+  return {'水源街':'🏢 公司周邊','公道五路':'🛣️ 公道五路','馬偕':'🏥 馬偕周邊'}[a] || a;
+}
+
+// ── SYNC STATUS ────────────────────────────────────────────
+function setSyncStatus(state, text) {
+  const dot = document.getElementById('sync-dot');
+  const txt = document.getElementById('sync-text');
+  dot.className = 'sync-dot ' + state;
+  txt.textContent = text;
+}
+
+// ── LOAD DATA ──────────────────────────────────────────────
+async function loadData() {
+  setSyncStatus('loading', '同步中…');
+
+  if (!APPS_SCRIPT_URL) {
+    // No API — use default + localStorage
+    document.getElementById('setup-banner').style.display = 'flex';
+    const local = JSON.parse(localStorage.getItem('weihua_local') || '[]');
+    allData = [...DEFAULT_DATA, ...local];
+    isApiMode = false;
+    setSyncStatus('', '本地模式');
+    document.getElementById('last-sync').textContent = '使用預設資料（未設定 API）';
+    renderCards();
+    return;
+  }
+
+  try {
+    const res = await fetch(APPS_SCRIPT_URL, { cache: 'no-store' });
+    const json = await res.json();
+    if (json.ok) {
+      allData = json.data;
+      isApiMode = true;
+      setSyncStatus('ok', '已同步');
+      const now = new Date().toLocaleTimeString('zh-TW',{hour:'2-digit',minute:'2-digit'});
+      document.getElementById('last-sync').textContent = `上次同步：${now}`;
+      renderCards();
+    } else {
+      throw new Error(json.error);
+    }
+  } catch(e) {
+    setSyncStatus('err', '連線失敗');
+    document.getElementById('last-sync').textContent = '同步失敗，顯示預設資料';
+    const local = JSON.parse(localStorage.getItem('weihua_local') || '[]');
+    allData = [...DEFAULT_DATA, ...local];
+    renderCards();
+    console.error('API error:', e);
+  }
+}
+
+// ── RENDER ─────────────────────────────────────────────────
+function renderCards() {
+  const list = document.getElementById('card-list');
+  list.innerHTML = '';
+  let count = 0;
+  const userCount = allData.filter(r => r.user).length;
+
+  allData.forEach((r, i) => {
+    const catMatch = activeFilter === 'all' || (r.cat && r.cat.includes(activeFilter));
+    const areaMatch = activeArea === 'all' || r.area === activeArea;
+    const q = searchText.toLowerCase();
+    const searchMatch = !q || r.name.toLowerCase().includes(q) || (r.note||'').toLowerCase().includes(q) || (r.cat||[]).some(c=>c.includes(q));
+    if (!catMatch || !areaMatch || !searchMatch) return;
+
+    count++;
+    const card = document.createElement('div');
+    card.className = 'card' + (r.user ? ' user-card' : '');
+
+    card.innerHTML = `
+      <div class="card-top">
+        <div class="card-name">${r.name}</div>
+        <div class="card-rating">${r.rating ? parseFloat(r.rating).toFixed(1) : '–'}</div>
+      </div>
+      <div class="card-tags">
+        ${(r.cat||[]).map(c=>`<span class="tag" style="background:${TAG_COLORS[c]||'var(--tag-other)'}22;color:${TAG_COLORS[c]||'var(--tag-other)'};border:1px solid ${TAG_COLORS[c]||'var(--tag-other)'}44">${c}</span>`).join('')}
+        <span class="area-badge">${getAreaLabel(r.area)}</span>
+      </div>
+      <div class="card-note">${r.note || '暫無備註'}</div>
+      <div class="card-meta">
+        <span>🕐 ${r.hours || '未知'}</span>
+        ${r.closed ? `<span style="color:var(--tag-hot)">✕ ${r.closed}公休</span>` : ''}
+      </div>
+      ${r.user ? `<button class="card-del" onclick="deleteEntry(event,${i})">🗑 刪除</button>` : ''}
+    `;
+    card.addEventListener('click', e => { if(e.target.classList.contains('card-del')) return; showDetail(r, card); });
+    list.appendChild(card);
+  });
+
+  if (count === 0) {
+    list.innerHTML = `<div class="no-results"><div class="icon">🍽️</div><div>找不到符合條件的餐廳</div></div>`;
+  }
+
+  document.getElementById('show-count').textContent = count;
+  document.getElementById('total-count').textContent = allData.length + ' 家';
+  document.getElementById('user-count-label').textContent = userCount > 0
+    ? `👤 同仁新增 ${userCount} 家`
+    : '⭐ 評分來源：Google Maps';
+}
+
+// ── DETAIL ─────────────────────────────────────────────────
+function showDetail(r, card) {
+  document.querySelectorAll('.card').forEach(c=>c.classList.remove('highlighted'));
+  card.classList.add('highlighted');
+  document.getElementById('d-name').textContent = r.name;
+  document.getElementById('d-rating').textContent = r.rating ? '⭐ ' + parseFloat(r.rating).toFixed(1) + ' / 5.0' : '⭐ 尚無評分';
+  document.getElementById('d-body').innerHTML = `
+    <strong>地址：</strong>${r.addr||'未填寫'}<br>
+    <strong>營業時間：</strong>${r.hours||'未知'}${r.closed?`（${r.closed}公休）`:''}<br>
+    <strong>備註：</strong>${r.note||'暫無備註'}<br>
+    <strong>類型：</strong>${(r.cat||[]).join('、')}<br>
+    <strong>區域：</strong>${getAreaLabel(r.area)}<br><br>
+    <a href="https://www.google.com/maps/search/${encodeURIComponent(r.name+' 新竹')}" target="_blank"
+       style="color:var(--accent);text-decoration:none;font-weight:700">→ 在 Google 地圖查看</a>
+  `;
+  document.getElementById('detail-panel').classList.add('open');
+}
+
+function closeDetail() {
+  document.getElementById('detail-panel').classList.remove('open');
+  document.querySelectorAll('.card').forEach(c=>c.classList.remove('highlighted'));
+}
+
+// ── DELETE ─────────────────────────────────────────────────
+async function deleteEntry(e, idx) {
+  e.stopPropagation();
+  if (!confirm('確定要刪除這家店嗎？')) return;
+  const r = allData[idx];
+
+  if (!isApiMode) {
+    const local = JSON.parse(localStorage.getItem('weihua_local')||'[]');
+    const li = local.findIndex(u=>u.name===r.name&&u.area===r.area);
+    if (li>=0) { local.splice(li,1); localStorage.setItem('weihua_local', JSON.stringify(local)); }
+    await loadData();
+    showToast('已刪除', 'success');
+    return;
+  }
+
+  try {
+    showToast('刪除中…', '');
+    await fetch(APPS_SCRIPT_URL, {
+      method:'POST',
+      body: JSON.stringify({ action:'delete', name: r.name, area: r.area })
+    });
+    await loadData();
+    closeDetail();
+    showToast('✓ 已刪除', 'success');
+  } catch(err) {
+    showToast('刪除失敗，請重試', 'error');
+  }
+}
+
+// ── MODAL ──────────────────────────────────────────────────
+function openModal() { document.getElementById('modal-overlay').classList.add('open'); document.getElementById('f-name').focus(); }
+
+function closeModal() {
+  document.getElementById('modal-overlay').classList.remove('open');
+  ['f-name','f-rating','f-addr','f-hours','f-closed','f-note'].forEach(id=>document.getElementById(id).value='');
+  document.querySelectorAll('.cat-check').forEach(c=>c.checked=false);
+  document.getElementById('form-error').style.display='none';
+}
+
+function handleOverlayClick(e) { if(e.target===document.getElementById('modal-overlay')) closeModal(); }
+
+async function submitForm() {
+  const name = document.getElementById('f-name').value.trim();
+  const cats = [...document.querySelectorAll('.cat-check:checked')].map(c=>c.value);
+  const errEl = document.getElementById('form-error');
+
+  if (!name) { errEl.textContent='請填入店名！'; errEl.style.display='block'; return; }
+  if (!cats.length) { errEl.textContent='請至少選一種類型！'; errEl.style.display='block'; return; }
+  errEl.style.display='none';
+
+  const entry = {
+    name,
+    area: document.getElementById('f-area').value,
+    cat: cats,
+    rating: document.getElementById('f-rating').value ? parseFloat(document.getElementById('f-rating').value) : null,
+    addr: document.getElementById('f-addr').value.trim(),
+    hours: document.getElementById('f-hours').value.trim(),
+    closed: document.getElementById('f-closed').value.trim(),
+    note: document.getElementById('f-note').value.trim(),
+    user: true
+  };
+
+  const btn = document.getElementById('submit-btn');
+  btn.disabled = true;
+  btn.textContent = '新增中…';
+
+  if (!isApiMode) {
+    // save to localStorage
+    const local = JSON.parse(localStorage.getItem('weihua_local')||'[]');
+    local.push(entry);
+    localStorage.setItem('weihua_local', JSON.stringify(local));
+    await loadData();
+    closeModal();
+    btn.disabled=false; btn.textContent='✓ 新增到地圖';
+    showToast('✓ 已新增！（本地模式）', 'success');
+    return;
+  }
+
+  try {
+    const res = await fetch(APPS_SCRIPT_URL, {
+      method:'POST',
+      body: JSON.stringify(entry)
+    });
+    const json = await res.json();
+    if (json.ok) {
+      await loadData();
+      closeModal();
+      showToast('✓ 新增成功！已同步給所有人', 'success');
+    } else {
+      throw new Error(json.error);
+    }
+  } catch(err) {
+    showToast('新增失敗：' + err.message, 'error');
+  } finally {
+    btn.disabled=false; btn.textContent='✓ 新增到地圖';
+  }
+}
+
+// ── TOAST ──────────────────────────────────────────────────
+function showToast(msg, type) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = 'toast show ' + type;
+  setTimeout(()=>t.className='toast', 2500);
+}
+
+// ── FILTERS ────────────────────────────────────────────────
+document.getElementById('filter-bar').addEventListener('click', e=>{
+  const btn=e.target.closest('.filter-btn'); if(!btn)return;
+  document.querySelectorAll('.filter-btn').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active'); activeFilter=btn.dataset.filter; renderCards();
+});
+document.getElementById('area-bar').addEventListener('click', e=>{
+  const btn=e.target.closest('.area-btn'); if(!btn)return;
+  document.querySelectorAll('.area-btn').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active'); activeArea=btn.dataset.area; renderCards();
+});
+document.getElementById('search-input').addEventListener('input', e=>{ searchText=e.target.value; renderCards(); });
+document.getElementById('modal-overlay').addEventListener('keydown', e=>{
+  if(e.key==='Escape') closeModal();
+  if(e.key==='Enter'&&e.target.tagName!=='TEXTAREA') submitForm();
+});
+
+// ── INIT ───────────────────────────────────────────────────
+loadData();
+// 每3分鐘自動重新同步
+setInterval(loadData, 3 * 60 * 1000);
+</script>
+</body>
+</html>
