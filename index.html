@@ -61,7 +61,7 @@
   .area-btn.active{background:var(--surface2);border-color:var(--accent2);color:var(--accent2);}
 
   /* MAIN */
-  .main{display:grid;grid-template-columns:1fr 340px;height:calc(100vh - 64px - 56px - 50px - 44px - 36px);min-height:400px;}
+  .main{display:grid;grid-template-columns:1fr;height:calc(100vh - 64px - 56px - 50px - 44px - 36px);min-height:400px;}
 
   .card-list{overflow-y:auto;padding:16px 24px;display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:14px;align-content:start;}
   .card-list::-webkit-scrollbar{width:4px;}
@@ -88,8 +88,28 @@
   .card-tags{display:flex;flex-wrap:wrap;gap:4px;margin-bottom:8px;}
   .tag{font-size:10px;font-weight:600;padding:2px 7px;border-radius:4px;}
   .area-badge{font-size:9px;font-weight:600;padding:2px 6px;border-radius:3px;background:var(--surface2);color:var(--text3);border:1px solid var(--border);}
-  .card-note{font-size:12px;color:var(--text2);line-height:1.5;margin-bottom:8px;padding:6px 10px;background:var(--surface2);border-radius:6px;}
-  .card-meta{display:flex;gap:10px;font-size:11px;color:var(--text3);flex-wrap:wrap;}
+  .card-note{font-size:12px;color:var(--text2);line-height:1.6;margin-bottom:10px;padding:8px 12px;background:var(--surface2);border-radius:6px;}
+  .card-meta{display:flex;gap:12px;font-size:11px;color:var(--text3);flex-wrap:wrap;margin-top:4px;padding-top:8px;border-top:1px solid var(--border);}
+
+  /* REVIEW */
+  .review-item{background:var(--surface2);border-radius:8px;padding:10px 12px;margin-bottom:8px;}
+  .review-author{font-size:11px;font-weight:700;color:var(--accent2);margin-bottom:4px;}
+  .review-text{font-size:12px;color:var(--text2);line-height:1.5;}
+  .review-stars{color:var(--accent2);font-size:11px;margin-left:6px;}
+  .photo-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin:10px 0;}
+  .photo-thumb{width:100%;aspect-ratio:1;object-fit:cover;border-radius:6px;border:1px solid var(--border);}
+  .section-title{font-size:11px;font-weight:700;color:var(--text3);letter-spacing:.08em;text-transform:uppercase;margin:16px 0 8px;}
+  .add-review-btn{display:flex;align-items:center;gap:6px;background:var(--surface2);border:1px solid var(--border);color:var(--text2);padding:8px 14px;border-radius:8px;font-size:12px;cursor:pointer;font-family:'Noto Sans TC',sans-serif;transition:all .15s;width:100%;margin-bottom:8px;}
+  .add-review-btn:hover{border-color:var(--accent);color:var(--text);}
+
+  /* REVIEW MODAL */
+  .review-modal{position:fixed;inset:0;background:rgba(0,0,0,.8);z-index:300;display:flex;align-items:flex-end;justify-content:center;opacity:0;pointer-events:none;transition:opacity .2s;}
+  .review-modal.open{opacity:1;pointer-events:all;}
+  .review-modal-box{background:var(--surface);border-radius:16px 16px 0 0;padding:24px;width:100%;max-width:600px;transform:translateY(100%);transition:transform .3s cubic-bezier(.16,1,.3,1);}
+  .review-modal.open .review-modal-box{transform:translateY(0);}
+  .star-row{display:flex;gap:8px;margin:12px 0;}
+  .star-btn{font-size:28px;cursor:pointer;opacity:.3;transition:opacity .15s;}
+  .star-btn.active{opacity:1;}
 
   .card-del{position:absolute;bottom:10px;right:10px;background:transparent;border:1px solid var(--border);color:var(--text3);font-size:10px;padding:2px 7px;border-radius:4px;cursor:pointer;display:none;transition:all .15s;font-family:'Noto Sans TC',sans-serif;}
   .user-card:hover .card-del{display:block;}
@@ -366,19 +386,6 @@
       <div>載入餐廳資料中…</div>
     </div>
   </div>
-  <div class="map-panel">
-    <div class="map-header">
-      <h3>地圖位置</h3>
-      <div style="font-size:11px;color:var(--text3)">點擊店家卡片查看位置</div>
-    </div>
-    <div class="map-container" style="flex:1;display:flex;align-items:center;justify-content:center;">
-      <div class="map-placeholder">
-        <div class="icon">🗺️</div>
-        <div>點擊左側店家卡片<br>在 Google 地圖開啟位置</div>
-        <div style="margin-top:8px;font-size:10px;line-height:1.6;color:var(--text3)">蔚華科技<br>新竹市東區水源街95號</div>
-      </div>
-    </div>
-  </div>
 </div>
 
 <div class="status-bar">
@@ -465,6 +472,41 @@
 
 <!-- TOAST -->
 <div class="toast" id="toast"></div>
+
+<!-- REVIEW MODAL -->
+<div class="review-modal" id="review-modal" onclick="handleReviewOverlay(event)">
+  <div class="review-modal-box">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+      <h3 style="font-size:16px;font-weight:900;" id="review-shop-name">新增評論</h3>
+      <button onclick="closeReviewModal()" style="background:var(--surface2);border:1px solid var(--border);color:var(--text2);width:28px;height:28px;border-radius:6px;cursor:pointer;font-size:14px;">✕</button>
+    </div>
+    <div class="form-label">評分</div>
+    <div class="star-row" id="star-row">
+      <span class="star-btn" data-star="1" onclick="setStar(1)">★</span>
+      <span class="star-btn" data-star="2" onclick="setStar(2)">★</span>
+      <span class="star-btn" data-star="3" onclick="setStar(3)">★</span>
+      <span class="star-btn" data-star="4" onclick="setStar(4)">★</span>
+      <span class="star-btn" data-star="5" onclick="setStar(5)">★</span>
+    </div>
+    <div class="form-row">
+      <label class="form-label">你的名字</label>
+      <input class="form-input" id="r-author" placeholder="例：小明" maxlength="20">
+    </div>
+    <div class="form-row">
+      <label class="form-label">評論內容 <span style="color:var(--accent)">*</span></label>
+      <textarea class="form-textarea" id="r-text" placeholder="分享你的用餐心得…" maxlength="200"></textarea>
+    </div>
+    <div class="form-row">
+      <label class="form-label">上傳照片（可選）</label>
+      <input type="file" id="r-photo" accept="image/*" multiple style="color:var(--text2);font-size:12px;">
+    </div>
+    <div id="r-error" style="color:var(--tag-hot);font-size:12px;margin-bottom:8px;display:none;"></div>
+    <div class="modal-footer">
+      <button class="btn-cancel" onclick="closeReviewModal()">取消</button>
+      <button class="btn-submit" onclick="submitReview()">✓ 送出評論</button>
+    </div>
+  </div>
+</div>
 
 <script>
 // ══════════════════════════════════════════════════════════
@@ -622,21 +664,149 @@ function renderCards() {
     : '⭐ 評分來源：Google Maps';
 }
 
+// ── REVIEWS（同步到試算表）────────────────────────────────
+let currentReviewShop = '';
+let currentReviewShopArea = '';
+let currentReviewStar = 0;
+
+async function loadReviews(shopName) {
+  // 先顯示載入中
+  const el = document.getElementById('d-reviews');
+  if (!el) return;
+
+  if (!APPS_SCRIPT_URL) {
+    // 本地模式：用 localStorage
+    renderReviewsLocal(shopName);
+    return;
+  }
+
+  el.innerHTML = `<div style="font-size:12px;color:var(--text3);padding:12px 0;">載入評論中…</div>`;
+  try {
+    const res = await fetch(APPS_SCRIPT_URL + '?action=reviews&shop=' + encodeURIComponent(shopName), { cache:'no-store' });
+    const json = await res.json();
+    if (json.ok) {
+      renderReviewsFromData(shopName, json.data);
+    } else {
+      renderReviewsLocal(shopName);
+    }
+  } catch(e) {
+    renderReviewsLocal(shopName);
+  }
+}
+
+function renderReviewsFromData(name, reviews) {
+  const el = document.getElementById('d-reviews');
+  if (!el) return;
+  const safeName = name.replace(/'/g,"\\'");
+  let html = `<div class="section-title">💬 評論（${reviews.length}）</div>`;
+  if (reviews.length === 0) {
+    html += `<div style="font-size:12px;color:var(--text3);margin-bottom:12px;">還沒有評論，第一個來寫吧！</div>`;
+  } else {
+    html += reviews.map(rev=>`
+      <div class="review-item">
+        <div class="review-author">${rev.author||'匿名'}
+          ${rev.star&&rev.star>0?`<span class="review-stars">${'★'.repeat(parseInt(rev.star))}${'☆'.repeat(5-parseInt(rev.star))}</span>`:''}
+          <span style="color:var(--text3);font-weight:400;margin-left:6px;font-size:10px;">${rev.time||''}</span>
+        </div>
+        <div class="review-text">${rev.text}</div>
+      </div>`).join('');
+  }
+  html += `<button class="add-review-btn" onclick="openReviewModal('${safeName}')">✏️ 新增評論</button>`;
+  el.innerHTML = html;
+}
+
+function renderReviewsLocal(name) {
+  // 備用：localStorage
+  const el = document.getElementById('d-reviews');
+  if (!el) return;
+  const reviews = (() => { try { return JSON.parse(localStorage.getItem('rev_'+name)||'[]'); } catch(e){return[];} })();
+  renderReviewsFromData(name, reviews);
+}
+
+function openReviewModal(name) {
+  currentReviewShop = name;
+  currentReviewStar = 0;
+  document.getElementById('review-shop-name').textContent = '📝 ' + name;
+  document.getElementById('r-author').value = '';
+  document.getElementById('r-text').value = '';
+  document.getElementById('r-error').style.display = 'none';
+  document.querySelectorAll('.star-btn').forEach(b=>b.classList.remove('active'));
+  document.getElementById('review-modal').classList.add('open');
+}
+
+function closeReviewModal() { document.getElementById('review-modal').classList.remove('open'); }
+function handleReviewOverlay(e) { if(e.target===document.getElementById('review-modal')) closeReviewModal(); }
+function setStar(n) {
+  currentReviewStar = n;
+  document.querySelectorAll('.star-btn').forEach(b=>b.classList.toggle('active', parseInt(b.dataset.star)<=n));
+}
+
+async function submitReview() {
+  const text = document.getElementById('r-text').value.trim();
+  const author = document.getElementById('r-author').value.trim() || '匿名';
+  const errEl = document.getElementById('r-error');
+  if (!text) { errEl.textContent='請填入評論內容！'; errEl.style.display='block'; return; }
+  errEl.style.display='none';
+
+  const btn = document.querySelector('#review-modal .btn-submit');
+  btn.disabled = true; btn.textContent = '送出中…';
+
+  const entry = {
+    action: 'addReview',
+    shopName: currentReviewShop,
+    author, text,
+    star: currentReviewStar,
+    time: new Date().toLocaleDateString('zh-TW')
+  };
+
+  if (!APPS_SCRIPT_URL) {
+    // 本地模式
+    const arr = (() => { try { return JSON.parse(localStorage.getItem('rev_'+currentReviewShop)||'[]'); } catch(e){return[];} })();
+    arr.unshift(entry);
+    localStorage.setItem('rev_'+currentReviewShop, JSON.stringify(arr));
+    closeReviewModal();
+    renderReviewsLocal(currentReviewShop);
+    showToast('✓ 評論已新增！（本地模式）', 'success');
+    btn.disabled=false; btn.textContent='✓ 送出評論';
+    return;
+  }
+
+  try {
+    const res = await fetch(APPS_SCRIPT_URL, { method:'POST', body: JSON.stringify(entry) });
+    const json = await res.json();
+    if (json.ok) {
+      closeReviewModal();
+      await loadReviews(currentReviewShop);
+      showToast('✓ 評論已同步給所有人！', 'success');
+    } else { throw new Error(json.error); }
+  } catch(err) {
+    // 失敗改存本地
+    const arr = (() => { try { return JSON.parse(localStorage.getItem('rev_'+currentReviewShop)||'[]'); } catch(e){return[];} })();
+    arr.unshift(entry);
+    localStorage.setItem('rev_'+currentReviewShop, JSON.stringify(arr));
+    closeReviewModal();
+    renderReviewsLocal(currentReviewShop);
+    showToast('評論已儲存（同步失敗，僅本機）', 'error');
+  } finally {
+    btn.disabled=false; btn.textContent='✓ 送出評論';
+  }
+}
+
 // ── DETAIL ─────────────────────────────────────────────────
 function showDetail(r, card) {
   document.querySelectorAll('.card').forEach(c=>c.classList.remove('highlighted'));
   card.classList.add('highlighted');
   document.getElementById('d-name').textContent = r.name;
   document.getElementById('d-rating').textContent = r.rating ? '⭐ ' + parseFloat(r.rating).toFixed(1) + ' / 5.0' : '尚無評分';
-  const mapQuery = encodeURIComponent((r.addr ? r.name + ' ' + r.addr : r.name) + ' 新竹');
+  const mapQuery = encodeURIComponent((r.addr ? r.name+' '+r.addr : r.name)+' 新竹');
   const mapEmbed = `https://maps.google.com/maps?q=${mapQuery}&output=embed&hl=zh-TW`;
   document.getElementById('d-body').innerHTML = `
-    <div style="display:grid;grid-template-columns:auto 1fr;gap:6px 12px;margin-bottom:14px;font-size:13px;">
-      ${r.cat&&r.cat.length?`<span style="color:var(--text3)">類型</span><span>${r.cat.map(c=>`<span class="tag" style="background:${TAG_COLORS[c]||'var(--tag-other)'}22;color:${TAG_COLORS[c]||'var(--tag-other)'};border:1px solid ${TAG_COLORS[c]||'var(--tag-other)'}44;font-size:11px;padding:1px 7px;border-radius:4px;">${c}</span>`).join(' ')}</span>`:''}
+    <div style="display:grid;grid-template-columns:auto 1fr;gap:10px 16px;margin-bottom:16px;font-size:13px;align-items:start;">
+      ${r.cat&&r.cat.length?`<span style="color:var(--text3);padding-top:2px;">類型</span><span>${r.cat.map(c=>`<span class="tag" style="background:${TAG_COLORS[c]||'var(--tag-other)'}22;color:${TAG_COLORS[c]||'var(--tag-other)'};border:1px solid ${TAG_COLORS[c]||'var(--tag-other)'}44;font-size:11px;padding:2px 8px;border-radius:4px;margin-right:4px;">${c}</span>`).join('')}</span>`:''}
       ${r.addr?`<span style="color:var(--text3)">地址</span><span>${r.addr}</span>`:''}
       ${r.hours?`<span style="color:var(--text3)">時間</span><span>${r.hours}</span>`:''}
-      ${r.closed?`<span style="color:var(--text3)">公休</span><span style="color:var(--tag-hot)">${r.closed}</span>`:`<span style="color:var(--text3)">公休</span><span style="color:var(--accent3)">天天開</span>`}
-      ${r.note?`<span style="color:var(--text3)">備註</span><span style="color:var(--text)">${r.note}</span>`:''}
+      <span style="color:var(--text3)">公休</span><span style="${r.closed?'color:var(--tag-hot)':'color:var(--accent3)'}">${r.closed||'天天開'}</span>
+      ${r.note?`<span style="color:var(--text3)">備註</span><span style="color:var(--text);line-height:1.6;">${r.note}</span>`:''}
     </div>
     <div class="detail-map">
       <iframe src="${mapEmbed}" allowfullscreen loading="lazy"></iframe>
@@ -644,7 +814,9 @@ function showDetail(r, card) {
     <a class="detail-open-map" href="https://www.google.com/maps/search/${mapQuery}" target="_blank">
       🗺️ 在 Google 地圖開啟導航
     </a>
+    <div id="d-reviews" style="margin-top:16px;"></div>
   `;
+  loadReviews(r.name);
   document.getElementById('detail-panel').classList.add('open');
   document.body.style.overflow = 'hidden';
 }
