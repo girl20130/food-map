@@ -160,9 +160,97 @@
   .no-results .icon{font-size:40px;margin-bottom:10px;}
 
   @media(max-width:900px){
-    .main{grid-template-columns:1fr;}
+    .main{grid-template-columns:1fr;height:auto;min-height:0;}
     .map-panel{display:none;}
     .detail-panel{right:0;}
+  }
+
+  /* ── 手機版優化 ── */
+  @media(max-width:600px){
+    /* Header 縮小 */
+    header{height:auto;padding:10px 14px;flex-wrap:wrap;gap:8px;}
+    .logo{font-size:11px;}
+    .header-title{font-size:14px;}
+    .header-sub{display:none;}
+    .header-right{gap:6px;}
+    .sync-status{font-size:10px;}
+    .add-btn{font-size:11px;padding:6px 10px;}
+    .count-badge{font-size:10px;padding:2px 8px;}
+    .refresh-btn{font-size:11px;padding:5px 8px;}
+
+    /* 搜尋列 */
+    .search-wrap{padding:10px 12px 0;}
+    .search-box input{font-size:13px;padding:9px 12px 9px 36px;}
+    .search-icon{font-size:14px;left:12px;}
+
+    /* 篩選按鈕 — 橫向捲動，不換行 */
+    .filter-bar{
+      padding:10px 12px 0;
+      flex-wrap:nowrap;
+      overflow-x:auto;
+      -webkit-overflow-scrolling:touch;
+      scrollbar-width:none;
+      gap:6px;
+    }
+    .filter-bar::-webkit-scrollbar{display:none;}
+    .filter-btn{
+      flex-shrink:0;
+      font-size:11px;
+      padding:5px 10px;
+      white-space:nowrap;
+    }
+
+    /* 區域按鈕 — 橫向捲動 */
+    .area-bar{
+      padding:8px 12px 0;
+      flex-wrap:nowrap;
+      overflow-x:auto;
+      -webkit-overflow-scrolling:touch;
+      scrollbar-width:none;
+      gap:5px;
+    }
+    .area-bar::-webkit-scrollbar{display:none;}
+    .area-btn{
+      flex-shrink:0;
+      font-size:10px;
+      padding:4px 10px;
+      white-space:nowrap;
+    }
+
+    /* 卡片清單 */
+    .card-list{
+      padding:10px 12px;
+      grid-template-columns:1fr;
+      gap:8px;
+      height:calc(100vh - 120px);
+      overflow-y:auto;
+    }
+
+    /* 卡片 */
+    .card{padding:12px 14px;}
+    .card-name{font-size:13px;}
+    .card-note{font-size:11px;}
+    .card.user-card::after{font-size:8px;top:8px;right:8px;}
+
+    /* 狀態列 */
+    .status-bar{
+      padding:6px 12px;
+      font-size:10px;
+      gap:8px;
+      flex-wrap:wrap;
+    }
+
+    /* 詳情面板 */
+    .detail-panel{padding:14px 16px;gap:12px;}
+    .detail-name{font-size:15px;}
+    .detail-rating{font-size:12px;}
+    .detail-body{font-size:11px;}
+
+    /* 新增 Modal */
+    .modal{padding:20px 16px;}
+    .modal h2{font-size:16px;}
+    .form-grid{grid-template-columns:1fr;}
+    .form-input,.form-select,.form-textarea{font-size:14px;}
   }
 </style>
 </head>
@@ -334,7 +422,7 @@
 // ⚙️ 設定區 — 把你的 Apps Script 網址貼在這裡
 // 部署後網址長這樣：https://script.google.com/macros/s/XXXX/exec
 // ══════════════════════════════════════════════════════════
-const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwxtWot05NtWorquemUevWyXULgnyZQlOvzu1SDCQmt7BMMyK5jxtNwjQmmREXE9hT7/exec'; // ← 貼在這裡！
+const APPS_SCRIPT_URL = ''; // ← 貼在這裡！
 
 // ══════════════════════════════════════════════════════════
 // 預設資料（API 未設定時使用）
