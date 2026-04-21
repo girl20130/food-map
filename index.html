@@ -646,7 +646,6 @@ function renderCards() {
       <div class="card-meta">
         ${r.hours ? `<span>🕐 ${r.hours}</span>` : ''}
         ${r.closed ? `<span style="color:var(--tag-hot)">✕ ${r.closed}公休</span>` : '<span style="color:var(--accent3)">✓ 天天開</span>'}
-        ${(()=>{ const w=calcWalkingTime(r.name, r.addr, r.lat, r.lng); return w ? `<span style="color:${w.color};font-weight:600;">${w.emoji} 約${w.mins}分鐘</span>` : ''; })()}
       </div>
       ${r.user ? `<button class="card-del" onclick="deleteEntry(event,${i})">🗑 刪除</button>` : ''}
     `;
@@ -892,23 +891,10 @@ function showDetail(r, card) {
       <span style="color:var(--text3)">公休</span><span style="${r.closed?'color:var(--tag-hot)':'color:var(--accent3)'}">${r.closed||'天天開'}</span>
       ${r.note?`<span style="color:var(--text3)">備註</span><span style="color:var(--text);line-height:1.6;">${r.note}</span>`:''}
     </div>
-
-    <div style="background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:12px 14px;margin-bottom:12px;display:flex;align-items:center;gap:12px;">
-      <div style="font-size:24px;">🚶</div>
-      <div>
-        <div style="font-size:12px;color:var(--text3);margin-bottom:2px;">從蔚華科技（水源街95號）步行</div>
-        ${(()=>{
-          const w = calcWalkingTime(r.name, r.addr, r.lat, r.lng);
-          if (w) return `<div style="font-size:16px;font-weight:900;color:${w.color};">${w.emoji} 約 ${w.mins} 分鐘 <span style="font-size:12px;font-weight:400;color:var(--text3);">（${w.dist}公尺）</span></div>`;
-          return `<div style="font-size:13px;color:var(--text2);">點下方地圖查看路線</div>`;
-        })()}
-      </div>
-    </div>
-
+    <div style="font-size:11px;color:var(--text3);margin-bottom:8px;">🚶 從蔚華科技（水源街95號）步行路線</div>
     <div class="detail-map">
       <iframe src="${mapEmbed}" allowfullscreen loading="lazy"></iframe>
     </div>
-
     <a class="detail-open-map" href="${routeUrl}" target="_blank">
       🚶 開啟步行導航
     </a>
